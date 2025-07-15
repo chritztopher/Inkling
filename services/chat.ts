@@ -44,45 +44,10 @@ export const getInklingResponse = async (
   personaId: string,
   bookId: string
 ): Promise<InklingResponse | null> => {
-  try {
-    // In a real implementation, this would:
-    // 1. Send the transcript, persona, and book context to your backend
-    // 2. Generate a contextual response using AI/LLM
-    // 3. Convert the response to speech using TTS
-    // 4. Return both text and audio URL
-
-    // Mock implementation for now
-    const response = await fetch('https://your-api-endpoint.com/inkling/chat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        message: transcript,
-        persona_id: personaId,
-        book_id: bookId,
-        context: {
-          // Add any additional context here
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Chat API failed: ${response.statusText}`);
-    }
-
-    const result = await response.json();
-    return {
-      text: result.text,
-    };
-  } catch (error) {
-    console.error('Failed to get Inkling response:', error);
-    
-    // Fallback mock response for development
-    return {
-      text: `Thank you for saying "${transcript}". I'm ${personaId} and we're discussing ${bookId}. How can I help you explore this further?`,
-    };
-  }
+  // Using mock response for development - replace with real API call when backend is ready
+  return {
+    text: `Thank you for saying "${transcript}". I'm ${personaId} and we're discussing ${bookId}. How can I help you explore this further?`,
+  };
 };
 
 /**

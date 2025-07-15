@@ -1,6 +1,7 @@
-import "dotenv/config";
+require('dotenv').config();
 
-export default {
+module.exports = ({ config }) => ({
+  ...config,
   expo: {
     name: "Inkling",
     slug: "inkling-conversation",
@@ -38,4 +39,4 @@ export default {
     ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   },
-}; 
+}); 

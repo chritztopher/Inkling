@@ -27,7 +27,7 @@ export async function synthesize(
     voiceId?: string;
     provider?: "eleven";
   }
-): Promise<string> {
+): Promise<string | null> {
   if (!text || text.trim().length === 0) {
     throw new Error("Text cannot be empty for synthesis");
   }
@@ -48,6 +48,11 @@ export async function synthesize(
     }
   } catch (error) {
     console.error(`TTS synthesis error with provider ${provider}:`, error);
+    // Return null for development when API keys are not configured
+    if (error instanceof Error && error.message.includes('API key not configured')) {
+      console.warn('Skipping audio synthesis due to missing API key');
+      return null;
+    }
     throw error;
   }
 }

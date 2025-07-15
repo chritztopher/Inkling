@@ -1,9 +1,6 @@
-import Constants from "expo-constants";
+import { ELEVEN_KEY } from "./env";
 
 const BASE = "https://api.elevenlabs.io/v1";
-
-// Get API key from Expo config
-const ELEVEN_KEY = Constants.expoConfig?.extra?.ELEVENLABS_API_KEY as string;
 
 /**
  * Convert text to speech using ElevenLabs API
@@ -18,7 +15,9 @@ export async function elevenTTS(
   model = "eleven_multilingual_v2"
 ): Promise<string> {
   if (!ELEVEN_KEY) {
-    throw new Error("ElevenLabs API key not configured. Please set ELEVENLABS_API_KEY in your .env file.");
+    // Skip audio synthesis for development when API key is not configured
+    console.warn("ElevenLabs API key not configured. Skipping audio synthesis.");
+    throw new Error("ElevenLabs API key not configured");
   }
 
   if (!text || text.trim().length === 0) {

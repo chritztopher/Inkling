@@ -17,12 +17,8 @@ export default function App() {
   useEffect(() => {
     const prepare = async () => {
       try {
-        // Preload assets
-        const assets = [
-          require('./assets/waveform.json'),
-        ];
-
-        await Asset.loadAsync(assets);
+        // No assets to preload currently - JSON files are loaded directly when needed
+        // await Asset.loadAsync([]);
       } catch (error) {
         console.warn('Failed to load assets:', error);
       } finally {

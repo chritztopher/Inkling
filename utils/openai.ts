@@ -1,13 +1,8 @@
 /* eslint-disable camelcase */
-import Constants from 'expo-constants';
 import * as FileSystem from 'expo-file-system';
+import { OPENAI_KEY } from './env';
 
 const BASE = 'https://api.openai.com/v1';
-const OPENAI_KEY = Constants.expoConfig?.extra?.OPENAI_API_KEY as string;
-
-if (!OPENAI_KEY) {
-  console.warn('OPENAI_API_KEY not found in environment');
-}
 
 /**
  * Transcribe audio using OpenAI Whisper
@@ -16,7 +11,9 @@ if (!OPENAI_KEY) {
  */
 export async function whisperTranscribe(audioUri: string): Promise<string> {
   if (!OPENAI_KEY) {
-    throw new Error('OpenAI API key not configured. Please add OPENAI_API_KEY to your .env file.');
+    // Return mock transcription for development when API key is not configured
+    console.warn('OpenAI API key not configured. Using mock transcription.');
+    return 'Mock transcription: This is a test voice message for development purposes.';
   }
 
   try {
