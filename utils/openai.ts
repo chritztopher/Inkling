@@ -12,7 +12,6 @@ const BASE = 'https://api.openai.com/v1';
 export async function whisperTranscribe(audioUri: string): Promise<string> {
   if (!OPENAI_KEY) {
     // Return mock transcription for development when API key is not configured
-    console.warn('OpenAI API key not configured. Using mock transcription.');
     return 'Mock transcription: This is a test voice message for development purposes.';
   }
 

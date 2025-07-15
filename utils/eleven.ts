@@ -16,7 +16,6 @@ export async function elevenTTS(
 ): Promise<string> {
   if (!ELEVEN_KEY) {
     // Skip audio synthesis for development when API key is not configured
-    console.warn("ElevenLabs API key not configured. Skipping audio synthesis.");
     throw new Error("ElevenLabs API key not configured");
   }
 

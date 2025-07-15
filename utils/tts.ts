@@ -50,7 +50,6 @@ export async function synthesize(
     console.error(`TTS synthesis error with provider ${provider}:`, error);
     // Return null for development when API keys are not configured
     if (error instanceof Error && error.message.includes('API key not configured')) {
-      console.warn('Skipping audio synthesis due to missing API key');
       return null;
     }
     throw error;

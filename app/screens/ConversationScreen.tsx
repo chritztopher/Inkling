@@ -237,7 +237,6 @@ const ConversationScreen: React.FC<ConversationScreenProps> = () => {
 
       // Skip audio playback if synthesis failed or API key is missing
       if (!audioUrl) {
-        console.warn('Skipping audio playback - synthesis failed or API key missing');
         setSpeaking(false);
         return;
       }
