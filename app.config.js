@@ -6,10 +6,10 @@ export default {
     slug: "inkling-conversation",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/icon.png",
+    // icon: "./assets/icon.png", // Removed for now - focusing on core functionality
     userInterfaceStyle: "light",
     splash: {
-      image: "./assets/splash.png",
+      // image: "./assets/splash.png", // Removed for now - focusing on core functionality
       resizeMode: "contain",
       backgroundColor: "#ffffff"
     },
@@ -22,13 +22,13 @@ export default {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: "./assets/adaptive-icon.png",
+        // foregroundImage: "./assets/adaptive-icon.png", // Removed for now - focusing on core functionality
         backgroundColor: "#ffffff"
       },
       package: "com.inkling.conversation"
     },
     web: {
-      favicon: "./assets/favicon.png"
+      // favicon: "./assets/favicon.png" // Removed for now - focusing on core functionality
     },
     plugins: [
       "expo-av"

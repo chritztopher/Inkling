@@ -89,76 +89,50 @@ export const getInklingResponse = async (
  * Get persona information by ID
  */
 export const getPersona = async (personaId: string): Promise<Persona | null> => {
-  try {
-    const response = await fetch(`https://your-api-endpoint.com/personas/${personaId}`);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch persona: ${response.statusText}`);
-    }
+  // Using mock data for now - replace with real API call when backend is ready
+  const mockPersonas: Record<string, Persona> = {
+    'jane-austen': {
+      id: 'jane-austen',
+      name: 'Jane Austen',
+      description: 'English novelist known for her wit and social commentary',
+      voiceId: 'jane-austen-voice',
+      avatar: 'https://example.com/jane-austen-avatar.jpg',
+    },
+    'shakespeare': {
+      id: 'shakespeare',
+      name: 'William Shakespeare',
+      description: 'English playwright and poet',
+      voiceId: 'shakespeare-voice',
+      avatar: 'https://example.com/shakespeare-avatar.jpg',
+    },
+  };
 
-    const persona = await response.json();
-    return persona;
-  } catch (error) {
-    console.error('Failed to get persona:', error);
-    
-    // Fallback mock persona
-    const mockPersonas: Record<string, Persona> = {
-      'jane-austen': {
-        id: 'jane-austen',
-        name: 'Jane Austen',
-        description: 'English novelist known for her wit and social commentary',
-        voiceId: 'jane-austen-voice',
-        avatar: 'https://example.com/jane-austen-avatar.jpg',
-      },
-      'shakespeare': {
-        id: 'shakespeare',
-        name: 'William Shakespeare',
-        description: 'English playwright and poet',
-        voiceId: 'shakespeare-voice',
-        avatar: 'https://example.com/shakespeare-avatar.jpg',
-      },
-    };
-
-    return mockPersonas[personaId] || null;
-  }
+  return mockPersonas[personaId] || null;
 };
 
 /**
  * Get book information by ID
  */
 export const getBook = async (bookId: string): Promise<Book | null> => {
-  try {
-    const response = await fetch(`https://your-api-endpoint.com/books/${bookId}`);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch book: ${response.statusText}`);
-    }
+  // Using mock data for now - replace with real API call when backend is ready
+  const mockBooks: Record<string, Book> = {
+    'pride-and-prejudice': {
+      id: 'pride-and-prejudice',
+      title: 'Pride and Prejudice',
+      author: 'Jane Austen',
+      description: 'A romantic novel about Elizabeth Bennet and Mr. Darcy',
+      cover: 'https://example.com/pride-prejudice-cover.jpg',
+    },
+    'hamlet': {
+      id: 'hamlet',
+      title: 'Hamlet',
+      author: 'William Shakespeare',
+      description: 'A tragedy about the Prince of Denmark',
+      cover: 'https://example.com/hamlet-cover.jpg',
+    },
+  };
 
-    const book = await response.json();
-    return book;
-  } catch (error) {
-    console.error('Failed to get book:', error);
-    
-    // Fallback mock books
-    const mockBooks: Record<string, Book> = {
-      'pride-and-prejudice': {
-        id: 'pride-and-prejudice',
-        title: 'Pride and Prejudice',
-        author: 'Jane Austen',
-        description: 'A romantic novel about Elizabeth Bennet and Mr. Darcy',
-        cover: 'https://example.com/pride-prejudice-cover.jpg',
-      },
-      'hamlet': {
-        id: 'hamlet',
-        title: 'Hamlet',
-        author: 'William Shakespeare',
-        description: 'A tragedy about the Prince of Denmark',
-        cover: 'https://example.com/hamlet-cover.jpg',
-      },
-    };
-
-    return mockBooks[bookId] || null;
-  }
+  return mockBooks[bookId] || null;
 };
 
 /**

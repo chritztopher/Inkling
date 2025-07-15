@@ -17,7 +17,6 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
-import { Asset } from 'expo-asset';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -25,7 +24,6 @@ import Animated, {
   withRepeat,
   withSequence,
 } from 'react-native-reanimated';
-import { SvgXml } from 'react-native-svg';
 import LottieView from 'lottie-react-native';
 
 // Components
@@ -87,18 +85,6 @@ const ConversationScreen: React.FC<ConversationScreenProps> = () => {
   useEffect(() => {
     const initializeConversation = async () => {
       try {
-        // Load ink-blot SVG
-        const inkBlotAsset = Asset.fromModule(require('../../assets/inkblot.svg'));
-        await inkBlotAsset.downloadAsync();
-        
-        // In a real app, you would load the SVG content here
-        // For now, we'll use a placeholder
-        setInkBlotSvg(`
-          <svg width="300" height="300" viewBox="0 0 300 300">
-            <path d="M150 50 C180 60, 220 80, 240 120 C250 150, 240 180, 220 200 C200 220, 170 230, 150 225 C130 230, 100 220, 80 200 C60 180, 50 150, 60 120 C80 80, 120 60, 150 50 Z" fill="#000000" opacity="0.6"/>
-          </svg>
-        `);
-
         // Load persona and book data
         const persona = await getPersona(personaId);
         const book = await getBook(bookId);
@@ -391,17 +377,7 @@ const ConversationScreen: React.FC<ConversationScreenProps> = () => {
 
       {/* Body */}
       <View style={styles.body}>
-        {/* Ink-blot background */}
-        <View style={styles.inkBlotContainer}>
-          {inkBlotSvg && (
-            <SvgXml
-              xml={inkBlotSvg}
-              width={screenWidth * 0.8}
-              height={screenWidth * 0.8}
-              style={styles.inkBlot}
-            />
-          )}
-        </View>
+        {/* Background removed for now - focusing on core voice functionality */}
 
         {/* Avatar */}
         <Animated.View style={[styles.avatarContainer, avatarAnimatedStyle]}>
@@ -487,19 +463,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
-  },
-  inkBlotContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    opacity: 0.6,
-  },
-  inkBlot: {
-    position: 'absolute',
   },
   avatarContainer: {
     zIndex: 10,

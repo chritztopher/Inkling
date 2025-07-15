@@ -19,7 +19,6 @@ export default function App() {
       try {
         // Preload assets
         const assets = [
-          require('./assets/inkblot.svg'),
           require('./assets/waveform.json'),
         ];
 
