@@ -3,20 +3,23 @@ import Constants from 'expo-constants';
 import * as FileSystem from 'expo-file-system';
 
 const BASE = 'https://api.openai.com/v1';
-const OPENAI_KEY = Constants.expoConfig?.extra?.OPENAI_API_KEY as string;
 
-if (!OPENAI_KEY) {
-  console.warn('OPENAI_API_KEY not found in environment');
+// SECURITY FIX: Instead of exposing API keys directly, use a backend proxy
+// const OPENAI_KEY = Constants.expoConfig?.extra?.OPENAI_API_KEY as string;
+const BACKEND_URL = Constants.expoConfig?.extra?.BACKEND_URL || "https://your-backend-api.com";
+
+if (!BACKEND_URL) {
+  console.warn('BACKEND_URL not found in environment');
 }
 
 /**
- * Transcribe audio using OpenAI Whisper
+ * Transcribe audio using OpenAI Whisper (via secure backend proxy)
  * @param audioUri - Local file URI of the audio to transcribe
  * @returns Promise<string> - The transcribed text
  */
 export async function whisperTranscribe(audioUri: string): Promise<string> {
-  if (!OPENAI_KEY) {
-    throw new Error('OpenAI API key not configured. Please add OPENAI_API_KEY to your .env file.');
+  if (!BACKEND_URL) {
+    throw new Error('Backend URL not configured. Please add BACKEND_URL to your .env file.');
   }
 
   try {
@@ -36,16 +39,18 @@ export async function whisperTranscribe(audioUri: string): Promise<string> {
     formData.append('model', 'whisper-1');
     formData.append('response_format', 'text');
 
-    const res = await fetch(`${BASE}/audio/transcriptions`, {
+    // Use secure backend proxy instead of direct API calls
+    const res = await fetch(`${BACKEND_URL}/api/transcribe`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_KEY}`,
+        // Add authentication headers as needed (e.g., JWT token)
+        // 'Authorization': `Bearer ${userToken}`,
       },
       body: formData,
     });
 
     if (!res.ok) {
-      let errorMessage = `Whisper API error ${res.status}`;
+      let errorMessage = `Transcription Service error ${res.status}`;
       
       try {
         const errorData = await res.json();
@@ -57,7 +62,7 @@ export async function whisperTranscribe(audioUri: string): Promise<string> {
       
       // Provide user-friendly error messages
       if (res.status === 401) {
-        errorMessage = 'Invalid OpenAI API key. Please check your configuration.';
+        errorMessage = 'Authentication failed. Please check your credentials.';
       } else if (res.status === 413) {
         errorMessage = 'Audio file too large. Please try a shorter recording.';
       } else if (res.status === 429) {
@@ -70,7 +75,7 @@ export async function whisperTranscribe(audioUri: string): Promise<string> {
     const result = await res.json();
     return result.text || '';
   } catch (error) {
-    console.error('Failed to transcribe audio with Whisper:', error);
+    console.error('Failed to transcribe audio:', error);
     // Re-throw with preserved error message for user feedback
     throw error instanceof Error ? error : new Error('Unknown transcription error');
   }
@@ -90,17 +95,18 @@ export async function getInklingResponse(
   personaId: string,
   bookId: string
 ): Promise<string> {
-  if (!OPENAI_KEY) {
-    throw new Error('OpenAI API key not configured. Please add OPENAI_API_KEY to your .env file.');
+  if (!BACKEND_URL) {
+    throw new Error('Backend URL not configured. Please add BACKEND_URL to your .env file.');
   }
 
   try {
     const personaPrompt = makePersonaPrompt(personaId, bookId);
 
-    const res = await fetch(`${BASE}/chat/completions`, {
+    const res = await fetch(`${BACKEND_URL}/api/chat`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_KEY}`,
+        // Add authentication headers as needed (e.g., JWT token)
+        // 'Authorization': `Bearer ${userToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -116,7 +122,7 @@ export async function getInklingResponse(
     });
 
     if (!res.ok) {
-      let errorMessage = `OpenAI Chat API error ${res.status}`;
+      let errorMessage = `Chat Service error ${res.status}`;
       
       try {
         const errorData = await res.json();
@@ -128,7 +134,7 @@ export async function getInklingResponse(
       
       // Provide user-friendly error messages
       if (res.status === 401) {
-        errorMessage = 'Invalid OpenAI API key. Please check your configuration.';
+        errorMessage = 'Authentication failed. Please check your credentials.';
       } else if (res.status === 429) {
         errorMessage = 'Too many requests. Please wait a moment and try again.';
       } else if (res.status === 400) {

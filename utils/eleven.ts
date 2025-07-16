@@ -2,11 +2,12 @@ import Constants from "expo-constants";
 
 const BASE = "https://api.elevenlabs.io/v1";
 
-// Get API key from Expo config
-const ELEVEN_KEY = Constants.expoConfig?.extra?.ELEVENLABS_API_KEY as string;
+// SECURITY FIX: Instead of exposing API keys directly, use a backend proxy
+// const ELEVEN_KEY = Constants.expoConfig?.extra?.ELEVENLABS_API_KEY as string;
+const BACKEND_URL = Constants.expoConfig?.extra?.BACKEND_URL || "https://your-backend-api.com";
 
 /**
- * Convert text to speech using ElevenLabs API
+ * Convert text to speech using ElevenLabs API (via secure backend proxy)
  * @param text The text to convert to speech
  * @param voiceId The voice ID to use (default: English female)
  * @param model The model to use (default: eleven_multilingual_v2)
@@ -17,25 +18,26 @@ export async function elevenTTS(
   voiceId = "21m00Tcm4TlvDq8ikWAM",   // default English female
   model = "eleven_multilingual_v2"
 ): Promise<string> {
-  if (!ELEVEN_KEY) {
-    throw new Error("ElevenLabs API key not configured. Please set ELEVENLABS_API_KEY in your .env file.");
-  }
-
   if (!text || text.trim().length === 0) {
     throw new Error("Text cannot be empty");
   }
 
+  if (!BACKEND_URL) {
+    throw new Error("Backend URL not configured. Please set BACKEND_URL in your .env file.");
+  }
+
   try {
-    const res = await fetch(`${BASE}/text-to-speech/${voiceId}/stream`, {
+    // Use secure backend proxy instead of direct API calls
+    const res = await fetch(`${BACKEND_URL}/api/tts/eleven`, {
       method: "POST",
       headers: {
-        accept: "audio/mpeg",
-        "xi-api-key": ELEVEN_KEY,
-        "content-type": "application/json",
+        "Content-Type": "application/json",
+        // Add authentication headers as needed (e.g., JWT token)
       },
       body: JSON.stringify({
         text: text.trim(),
-        model_id: model,
+        voiceId,
+        model,
         voice_settings: { 
           similarity_boost: 0.75, 
           style: 0.3,
@@ -46,20 +48,20 @@ export async function elevenTTS(
 
     if (!res.ok) {
       const errTxt = await res.text();
-      throw new Error(`ElevenLabs ${res.status}: ${errTxt}`);
+      throw new Error(`TTS Service ${res.status}: ${errTxt}`);
     }
 
-    const blob = await res.blob();                  // small, plays quickly
+    const blob = await res.blob();
     
-    // OPTIONAL: capture cost header
+    // OPTIONAL: capture cost header if returned by backend
     const creditsUsed = res.headers.get("x-credits-used");
     if (creditsUsed) {
-      console.info("Eleven credits used:", creditsUsed);
+      console.info("TTS credits used:", creditsUsed);
     }
 
-    return URL.createObjectURL(blob);               // for Expo Audio
+    return URL.createObjectURL(blob);
   } catch (error) {
-    console.error("ElevenLabs TTS error:", error);
+    console.error("TTS service error:", error);
     throw error;
   }
 }
@@ -69,26 +71,26 @@ export async function elevenTTS(
  * @returns Promise resolving to available voices
  */
 export async function getElevenVoices(): Promise<any[]> {
-  if (!ELEVEN_KEY) {
-    throw new Error("ElevenLabs API key not configured");
+  if (!BACKEND_URL) {
+    throw new Error("Backend URL not configured");
   }
 
   try {
-    const res = await fetch(`${BASE}/voices`, {
+    const res = await fetch(`${BACKEND_URL}/api/voices/eleven`, {
       headers: {
-        "xi-api-key": ELEVEN_KEY,
+        // Add authentication headers as needed
       },
     });
 
     if (!res.ok) {
       const errTxt = await res.text();
-      throw new Error(`ElevenLabs ${res.status}: ${errTxt}`);
+      throw new Error(`Voices Service ${res.status}: ${errTxt}`);
     }
 
     const data = await res.json();
     return data.voices || [];
   } catch (error) {
-    console.error("ElevenLabs voices error:", error);
+    console.error("Voices service error:", error);
     throw error;
   }
 }
@@ -98,26 +100,26 @@ export async function getElevenVoices(): Promise<any[]> {
  * @returns Promise resolving to user info
  */
 export async function getElevenUserInfo(): Promise<any> {
-  if (!ELEVEN_KEY) {
-    throw new Error("ElevenLabs API key not configured");
+  if (!BACKEND_URL) {
+    throw new Error("Backend URL not configured");
   }
 
   try {
-    const res = await fetch(`${BASE}/user`, {
+    const res = await fetch(`${BACKEND_URL}/api/user/eleven`, {
       headers: {
-        "xi-api-key": ELEVEN_KEY,
+        // Add authentication headers as needed
       },
     });
 
     if (!res.ok) {
       const errTxt = await res.text();
-      throw new Error(`ElevenLabs ${res.status}: ${errTxt}`);
+      throw new Error(`User Info Service ${res.status}: ${errTxt}`);
     }
 
     const data = await res.json();
     return data;
   } catch (error) {
-    console.error("ElevenLabs user info error:", error);
+    console.error("User Info service error:", error);
     throw error;
   }
 } 
