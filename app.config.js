@@ -15,7 +15,12 @@ module.exports = ({ config }) => ({
       backgroundColor: "#ffffff"
     },
     assetBundlePatterns: [
-      "**/*"
+      "assets/icon.png",
+      "assets/splash.png",
+      "assets/adaptive-icon.png",
+      "assets/favicon.png",
+      "assets/inkblot.svg",
+      "assets/waveform.json"
     ],
     ios: {
       supportsTablet: true,
@@ -34,7 +39,13 @@ module.exports = ({ config }) => ({
     plugins: [
       "expo-av",
       "expo-audio"
-    ]
+    ],
+    // Add optimization settings
+    optimization: {
+      tree_shaking: {
+        enabled: true
+      }
+    }
   },
   extra: {
     SUPABASE_URL: process.env.SUPABASE_URL,

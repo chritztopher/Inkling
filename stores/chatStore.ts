@@ -64,12 +64,16 @@ export const useChatStore = create<ChatState>()(
       },
 
       setCurrentConversation: (context: ConversationContext | null) => {
-        set({ currentConversation: context });
-        
-        // If starting a new conversation, clear previous messages
-        if (context && context.personaId !== get().currentConversation?.personaId) {
-          set({ messages: [] });
-        }
+        set((state: ChatState) => {
+          const updates: Partial<ChatState> = { currentConversation: context };
+          
+          // If starting a new conversation with a different persona, clear previous messages
+          if (context && context.personaId !== state.currentConversation?.personaId) {
+            updates.messages = [];
+          }
+          
+          return updates;
+        });
       },
 
       setRecording: (isRecording: boolean) => {
@@ -85,7 +89,19 @@ export const useChatStore = create<ChatState>()(
       },
 
       setCurrentAudio: (audio: any | null) => {
-        set({ currentAudio: audio });
+        set((state: ChatState) => {
+          // Clean up existing audio if it exists
+          if (state.currentAudio) {
+            try {
+              state.currentAudio.stopAsync().catch(console.error);
+              state.currentAudio.unloadAsync().catch(console.error);
+            } catch (cleanupError) {
+              console.warn('Failed to cleanup existing audio:', cleanupError);
+            }
+          }
+          
+          return { currentAudio: audio };
+        });
       },
 
       setAudioProgress: (progress: number) => {
