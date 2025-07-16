@@ -14,7 +14,12 @@ export default {
       backgroundColor: "#ffffff"
     },
     assetBundlePatterns: [
-      "**/*"
+      "assets/icon.png",
+      "assets/splash.png",
+      "assets/adaptive-icon.png",
+      "assets/favicon.png",
+      "assets/inkblot.svg",
+      "assets/waveform.json"
     ],
     ios: {
       supportsTablet: true,
@@ -32,7 +37,13 @@ export default {
     },
     plugins: [
       "expo-av"
-    ]
+    ],
+    // Add optimization settings
+    optimization: {
+      tree_shaking: {
+        enabled: true
+      }
+    }
   },
   extra: {
     ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY,
