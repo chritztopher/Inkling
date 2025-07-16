@@ -180,9 +180,27 @@ export const synthesizeSpeech = async (text: string, voiceId: string = 'default'
 /**
  * Play audio from URL
  */
-export const playAudio = async (audioUrl: string): Promise<Audio.Sound | null> => {
+export const playAudio = async (audioUrl: string, existingSound?: Audio.Sound | null): Promise<Audio.Sound | null> => {
   try {
+    // Clean up existing sound if provided
+    if (existingSound) {
+      try {
+        await existingSound.stopAsync();
+        await existingSound.unloadAsync();
+      } catch (cleanupError) {
+        console.warn('Failed to cleanup existing sound:', cleanupError);
+      }
+    }
+
     const { sound } = await Audio.Sound.createAsync({ uri: audioUrl });
+    
+    // Set up unload listener to prevent memory leaks
+    sound.setOnPlaybackStatusUpdate((status) => {
+      if (status.isLoaded && status.didJustFinish) {
+        sound.unloadAsync().catch(console.error);
+      }
+    });
+    
     await sound.playAsync();
     return sound;
   } catch (error) {
