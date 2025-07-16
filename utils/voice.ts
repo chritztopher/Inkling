@@ -18,9 +18,9 @@ export interface VoiceRecordingOptions {
     sampleRate: number;
     numberOfChannels: number;
     bitRate: number;
-    linearPCMBitDepth: number;
-    linearPCMIsBigEndian: boolean;
-    linearPCMIsFloat: boolean;
+    linearPCMBitDepth?: number;
+    linearPCMIsBigEndian?: boolean;
+    linearPCMIsFloat?: boolean;
   };
   web: {
     mimeType: string;
@@ -41,19 +41,17 @@ const recordingOptions: VoiceRecordingOptions = {
     outputFormat: Audio.AndroidOutputFormat.MPEG_4,
     audioEncoder: Audio.AndroidAudioEncoder.AAC,
     sampleRate: 44100,
-    numberOfChannels: 2,
+    numberOfChannels: 1, // Use mono for better compatibility
     bitRate: 128000,
   },
   ios: {
     extension: '.m4a',
-    outputFormat: Audio.IOSOutputFormat.MPEG4AAC,
-    audioQuality: Audio.IOSAudioQuality.HIGH,
+    outputFormat: Number(Audio.IOSOutputFormat.MPEG4AAC),
+    audioQuality: Number(Audio.IOSAudioQuality.MEDIUM), // Use medium quality for better compatibility
     sampleRate: 44100,
-    numberOfChannels: 2,
+    numberOfChannels: 1, // Use mono for better compatibility
     bitRate: 128000,
-    linearPCMBitDepth: 16,
-    linearPCMIsBigEndian: false,
-    linearPCMIsFloat: false,
+    // Remove linearPCM settings as they conflict with AAC format
   },
   web: {
     mimeType: 'audio/webm;codecs=opus',
@@ -77,7 +75,7 @@ export const initializeAudio = async (): Promise<boolean> => {
       playsInSilentModeIOS: true,
       playThroughEarpieceAndroid: false,
       shouldDuckAndroid: true,
-      staysActiveInBackground: true,
+      staysActiveInBackground: false, // Changed to false to prevent background issues
     });
 
     return true;
@@ -97,11 +95,46 @@ export const startRecording = async (): Promise<Audio.Recording | null> => {
       throw new Error('Audio permission not granted');
     }
 
+    // Add a small delay to ensure audio mode is set
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     const { recording } = await Audio.Recording.createAsync(recordingOptions);
     return recording;
   } catch (error) {
     console.error('Failed to start recording:', error);
-    return null;
+    
+    // Try with minimal configuration if default fails
+    try {
+      console.log('Attempting recording with minimal configuration...');
+      const minimalOptions = {
+        android: {
+          extension: '.m4a',
+          outputFormat: Audio.AndroidOutputFormat.MPEG_4,
+          audioEncoder: Audio.AndroidAudioEncoder.AAC,
+          sampleRate: 44100,
+          numberOfChannels: 1,
+          bitRate: 128000,
+        },
+        ios: {
+          extension: '.m4a',
+          outputFormat: Number(Audio.IOSOutputFormat.MPEG4AAC),
+          audioQuality: Number(Audio.IOSAudioQuality.LOW),
+          sampleRate: 44100,
+          numberOfChannels: 1,
+          bitRate: 128000,
+        },
+        web: {
+          mimeType: 'audio/webm;codecs=opus',
+          bitsPerSecond: 128000,
+        },
+      };
+      
+      const { recording } = await Audio.Recording.createAsync(minimalOptions);
+      return recording;
+    } catch (fallbackError) {
+      console.error('Fallback recording also failed:', fallbackError);
+      return null;
+    }
   }
 };
 

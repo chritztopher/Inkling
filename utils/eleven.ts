@@ -1,6 +1,9 @@
-import { ELEVEN_KEY } from "./env";
+/**
+ * @deprecated This file is deprecated. Use utils/api.ts with Supabase Edge Functions instead.
+ */
 
 const BASE = "https://api.elevenlabs.io/v1";
+const ELEVEN_KEY = undefined; // Deprecated: API keys are now handled by Supabase Edge Functions
 
 /**
  * Convert text to speech using ElevenLabs API

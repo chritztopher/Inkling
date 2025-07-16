@@ -1,8 +1,11 @@
 /* eslint-disable camelcase */
+/**
+ * @deprecated This file is deprecated. Use utils/api.ts with Supabase Edge Functions instead.
+ */
 import * as FileSystem from 'expo-file-system';
-import { OPENAI_KEY } from './env';
 
 const BASE = 'https://api.openai.com/v1';
+const OPENAI_KEY = undefined; // Deprecated: API keys are now handled by Supabase Edge Functions
 
 /**
  * Transcribe audio using OpenAI Whisper

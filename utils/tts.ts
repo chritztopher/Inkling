@@ -1,8 +1,5 @@
-import { elevenTTS } from "./eleven";
-// later import { vogentTTS } from "./vogent";
-
 // Configuration for TTS provider
-const PROVIDER = "eleven" as const; // flip when we A/B test
+const PROVIDER = "supabase" as const; // Using Supabase Edge Functions
 
 // Voice mapping for different personas
 const VOICE_MAP: Record<string, string> = {
@@ -18,6 +15,7 @@ const VOICE_MAP: Record<string, string> = {
  * @param personaId Optional persona ID to select appropriate voice
  * @param options Optional provider-specific options
  * @returns Promise resolving to audio blob URL
+ * @deprecated Use ttsAudioStream from utils/api.ts instead
  */
 export async function synthesize(
   text: string,
@@ -25,31 +23,25 @@ export async function synthesize(
   options?: {
     model?: string;
     voiceId?: string;
-    provider?: "eleven";
+    provider?: "supabase";
   }
 ): Promise<string | null> {
   if (!text || text.trim().length === 0) {
     throw new Error("Text cannot be empty for synthesis");
   }
 
-  const provider = options?.provider || PROVIDER;
+  console.warn('synthesize is deprecated. Use ttsAudioStream from utils/api.ts instead.');
+
   const voiceId = options?.voiceId || VOICE_MAP[personaId || "default"] || VOICE_MAP["default"];
 
   try {
-    switch (provider) {
-      case "eleven":
-        return await elevenTTS(text, voiceId, options?.model);
-      
-      // case "vogent":
-      //   return await vogentTTS(text, voiceId, options?.model);
-      
-      default:
-        throw new Error(`Unsupported TTS provider: ${provider}`);
-    }
+    // Use the new Supabase Edge Function API
+    const { ttsAudioStream } = await import('./api');
+    return await ttsAudioStream(text, voiceId);
   } catch (error) {
-    console.error(`TTS synthesis error with provider ${provider}:`, error);
-    // Return null for development when API keys are not configured
-    if (error instanceof Error && error.message.includes('API key not configured')) {
+    console.error('TTS synthesis error:', error);
+    // Return null for development when API is not configured
+    if (error instanceof Error && error.message.includes('not configured')) {
       return null;
     }
     throw error;
@@ -60,44 +52,34 @@ export async function synthesize(
  * Get available voices for the current provider
  * @param provider Optional provider to get voices for
  * @returns Promise resolving to available voices
+ * @deprecated Voice selection is now handled by Supabase Edge Functions
  */
-export async function getAvailableVoices(provider?: "eleven"): Promise<any[]> {
-  const currentProvider = provider || PROVIDER;
-
-  switch (currentProvider) {
-    case "eleven":
-      const { getElevenVoices } = await import("./eleven");
-      return await getElevenVoices();
-    
-    // case "vogent":
-    //   const { getVogentVoices } = await import("./vogent");
-    //   return await getVogentVoices();
-    
-    default:
-      throw new Error(`Unsupported TTS provider: ${currentProvider}`);
-  }
+export async function getAvailableVoices(_provider?: "supabase"): Promise<any[]> {
+  console.warn('getAvailableVoices is deprecated. Voice selection is now handled by Supabase Edge Functions.');
+  
+  // Return the default voice mappings for compatibility
+  return Object.entries(VOICE_MAP).map(([personaId, voiceId]) => ({
+    id: voiceId,
+    name: personaId,
+    persona: personaId,
+  }));
 }
 
 /**
  * Get user/account info for the current provider
  * @param provider Optional provider to get info for
  * @returns Promise resolving to user info
+ * @deprecated User info is now handled by Supabase Edge Functions
  */
-export async function getProviderInfo(provider?: "eleven"): Promise<any> {
-  const currentProvider = provider || PROVIDER;
-
-  switch (currentProvider) {
-    case "eleven":
-      const { getElevenUserInfo } = await import("./eleven");
-      return await getElevenUserInfo();
-    
-    // case "vogent":
-    //   const { getVogentUserInfo } = await import("./vogent");
-    //   return await getVogentUserInfo();
-    
-    default:
-      throw new Error(`Unsupported TTS provider: ${currentProvider}`);
-  }
+export async function getProviderInfo(_provider?: "supabase"): Promise<any> {
+  console.warn('getProviderInfo is deprecated. User info is now handled by Supabase Edge Functions.');
+  
+  // Return mock provider info for compatibility
+  return {
+    provider: 'supabase',
+    status: 'connected',
+    voices: Object.keys(VOICE_MAP),
+  };
 }
 
 /**

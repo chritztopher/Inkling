@@ -32,11 +32,12 @@ module.exports = ({ config }) => ({
       // favicon: "./assets/favicon.png" // Removed for now - focusing on core functionality
     },
     plugins: [
-      "expo-av"
+      "expo-av",
+      "expo-audio"
     ]
   },
   extra: {
-    ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY,
-    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    SUPABASE_URL: process.env.SUPABASE_URL,
+    SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
   },
 }); 

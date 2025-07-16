@@ -37,16 +37,17 @@ export interface ConversationContext {
 
 /**
  * Get a response from Inkling based on the user's transcript
- * This function handles the conversation flow and returns both text and audio
+ * This function is now deprecated - use chatLLM from utils/api.ts instead
  */
 export const getInklingResponse = async (
   transcript: string,
   personaId: string,
   bookId: string
 ): Promise<InklingResponse | null> => {
-  // Using mock response for development - replace with real API call when backend is ready
+  // Deprecated: Use chatLLM from utils/api.ts for new implementations
+  console.warn('getInklingResponse is deprecated. Use chatLLM from utils/api.ts instead.');
   return {
-    text: `Thank you for saying "${transcript}". I'm ${personaId} and we're discussing ${bookId}. How can I help you explore this further?`,
+    text: `Mock response for "${transcript}" from ${personaId} discussing ${bookId}. Please use the new chatLLM API.`,
   };
 };
 

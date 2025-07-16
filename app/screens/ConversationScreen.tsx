@@ -9,12 +9,11 @@ import {
   ActionSheetIOS,
   Platform,
   AccessibilityInfo,
-  Dimensions,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import Animated, {
@@ -27,12 +26,12 @@ import Animated, {
 import LottieView from 'lottie-react-native';
 
 // Components
-import MicButton, { MicButtonState } from '../components/MicButton';
+import MicButton, { type MicButtonState } from '../components/MicButton';
 
 // Services and Utils
-import { startRecording, stopRecording, transcribeAudio, cleanupAudio } from '../../utils/voice';
-import { getInklingResponse, getPersona, getBook, createMessage } from '../../services/chat';
-import { synthesize } from '../../utils/tts';
+import { startRecording, stopRecording, cleanupAudio } from '../../utils/voice';
+import { getPersona, getBook, createMessage } from '../../services/chat';
+import { sttWhisper, chatLLM, ttsAudioStream } from '../../utils/api';
 import { useChatStore } from '../../stores/chatStore';
 
 // Types
@@ -44,11 +43,9 @@ type RootStackParamList = {
 };
 
 type ConversationScreenRouteProp = RouteProp<RootStackParamList, 'Conversation'>;
-type ConversationScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Conversation'>;
+type ConversationScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Conversation'>;
 
 interface ConversationScreenProps {}
-
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const ConversationScreen: React.FC<ConversationScreenProps> = () => {
   const navigation = useNavigation<ConversationScreenNavigationProp>();
@@ -57,7 +54,6 @@ const ConversationScreen: React.FC<ConversationScreenProps> = () => {
 
   // Store
   const {
-    currentConversation,
     setCurrentConversation,
     isRecording,
     isThinking,
@@ -74,7 +70,6 @@ const ConversationScreen: React.FC<ConversationScreenProps> = () => {
   const [personaName, setPersonaName] = useState<string>('');
   const [currentRecording, setCurrentRecording] = useState<Audio.Recording | null>(null);
   const [currentSound, setCurrentSound] = useState<Audio.Sound | null>(null);
-  const [inkBlotSvg, setInkBlotSvg] = useState<string>('');
 
   // Refs
   const mountedRef = useRef(true);
@@ -98,7 +93,7 @@ const ConversationScreen: React.FC<ConversationScreenProps> = () => {
             bookId,
             messages: [],
             persona,
-            book,
+            ...(book && { book }),
           });
         }
       } catch (error) {
@@ -186,26 +181,8 @@ const ConversationScreen: React.FC<ConversationScreenProps> = () => {
       setCurrentRecording(null);
 
       if (audioUri) {
-        // Transcribe audio
-        const transcript = await transcribeAudio(audioUri);
-        
-        if (transcript && mountedRef.current) {
-          // Add user message
-          const userMessage = createMessage('user', transcript);
-          addMessage(userMessage);
-
-          // Get AI response
-          const response = await getInklingResponse(transcript, personaId, bookId);
-          
-          if (response && mountedRef.current) {
-            // Add assistant message
-            const assistantMessage = createMessage('assistant', response.text);
-            addMessage(assistantMessage);
-
-            // Synthesize and play audio response
-            await handleAssistantReply(response.text, personaId);
-          }
-        }
+        // Handle complete turn with streaming
+        await handleTurn(audioUri);
       }
     } catch (error) {
       console.error('Failed to stop recording or process response:', error);
@@ -222,30 +199,46 @@ const ConversationScreen: React.FC<ConversationScreenProps> = () => {
     }
   }, [currentRecording, personaId, bookId]);
 
-  // Handle assistant reply with TTS
-  const handleAssistantReply = useCallback(async (text: string, personaId: string) => {
+  // Handle complete turn with streaming
+  const handleTurn = useCallback(async (audioUri: string) => {
     try {
-      setSpeaking(true);
+      const transcript = await sttWhisper(audioUri);
       
-      // Announce that Inkling is speaking for accessibility
-      AccessibilityInfo.announceForAccessibility('Inkling is talking');
+      if (!transcript || !mountedRef.current) return;
 
-      // Synthesize speech using ElevenLabs
-      const audioUrl = await synthesize(text, personaId);
+      // Add user message
+      const userMessage = createMessage('user', transcript);
+      addMessage(userMessage);
+
+      // Initialize streaming response
+      let streamingText = '';
       
+      const reply = await chatLLM(
+        transcript,
+        personaId,
+        bookId,
+        (delta: string) => {
+          streamingText += delta;
+          // Optional: update UI with streaming text
+          console.log('Streaming chunk:', delta);
+        }
+      );
+
       if (!mountedRef.current) return;
 
-      // Skip audio playback if synthesis failed or API key is missing
-      if (!audioUrl) {
-        setSpeaking(false);
-        return;
-      }
+      // Add assistant message
+      const assistantMessage = createMessage('assistant', reply);
+      addMessage(assistantMessage);
 
+      // Generate and play audio
+      const audioUrl = await ttsAudioStream(reply);
       const { sound } = await Audio.Sound.createAsync({ uri: audioUrl });
       setCurrentSound(sound);
       setCurrentAudio(sound);
-
-      // Play audio
+      
+      setSpeaking(true);
+      AccessibilityInfo.announceForAccessibility('Inkling is talking');
+      
       await sound.playAsync();
 
       // Listen for completion
@@ -258,20 +251,21 @@ const ConversationScreen: React.FC<ConversationScreenProps> = () => {
         }
       });
     } catch (error) {
-      console.error('Failed to synthesize or play audio:', error);
+      console.error('Failed to process turn:', error);
       setSpeaking(false);
       setCurrentSound(null);
       setCurrentAudio(null);
       
-      // Show error toast
       Toast.show({
         type: 'error',
-        text1: 'Voice Error',
-        text2: 'Failed to generate voice response. Please try again.',
+        text1: 'Processing Error',
+        text2: 'Failed to process conversation turn. Please try again.',
         visibilityTime: 4000,
       });
     }
-  }, []);
+  }, [personaId, bookId]);
+
+
 
   // Handle overflow menu
   const handleOverflowMenu = useCallback(() => {
