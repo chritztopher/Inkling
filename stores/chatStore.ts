@@ -40,7 +40,7 @@ export interface ChatState {
 // Create the store
 export const useChatStore = create<ChatState>()(
   devtools(
-    (set, get) => ({
+    (set, _get) => ({
       // Initial state
       currentConversation: null,
       messages: [],

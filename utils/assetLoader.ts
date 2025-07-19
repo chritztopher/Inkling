@@ -143,14 +143,19 @@ export class AssetLoader {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
     
-    return await Asset.loadAsync(assetModule);
+    const assets = await Asset.loadAsync(assetModule);
+    const asset = Array.isArray(assets) ? assets[0] : assets;
+    if (!asset) {
+      throw new Error('Failed to load asset');
+    }
+    return asset;
   }
 
   private static async loadSvgInternal(assetModule: any): Promise<string> {
     const asset = await Asset.loadAsync(assetModule);
     
-    if (asset.localUri) {
-      const content = await FileSystem.readAsStringAsync(asset.localUri);
+    if (asset && 'localUri' in asset && asset.localUri) {
+      const content = await FileSystem.readAsStringAsync(asset.localUri as string);
       return content;
     }
     

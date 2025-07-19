@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { RootStackParamList } from '../navigation';
+import { type RootStackParamList } from '../navigation';
 
-type PersonasScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Personas'>;
+type PersonasScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Personas'>;
 
 interface PersonaItem {
   id: string;

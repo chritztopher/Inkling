@@ -1,7 +1,7 @@
 import React, { memo, useCallback } from 'react';
-import { View, TouchableOpacity, StyleSheet, GestureResponderEvent, ViewStyle } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, type GestureResponderEvent, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import MicButton, { MicButtonState } from './MicButton';
+import MicButton, { type MicButtonState } from './MicButton';
 
 interface ConversationFooterProps {
   micButtonState: MicButtonState;

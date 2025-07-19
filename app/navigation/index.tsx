@@ -45,7 +45,7 @@ const Navigation: React.FC = () => {
             options={{
               title: 'Choose a Persona',
               headerShown: true,
-              headerBackTitleVisible: false,
+              headerBackVisible: true,
             }}
           />
           

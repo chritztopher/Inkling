@@ -1,5 +1,5 @@
 import { Audio } from 'expo-av';
-import * as FileSystem from 'expo-file-system';
+// import * as FileSystem from 'expo-file-system';
 
 // Types
 export interface VoiceRecordingOptions {
@@ -158,7 +158,8 @@ export const stopRecording = async (recording: Audio.Recording): Promise<string 
 export const transcribeAudio = async (audioUri: string): Promise<string | null> => {
   try {
     // Import the OpenAI wrapper function
-    const { whisperTranscribe } = await import('./openai');
+    // Import the sttWhisper function directly
+    const { sttWhisper: whisperTranscribe } = await import('./api');
     
     // Use the OpenAI Whisper API
     const result = await whisperTranscribe(audioUri);

@@ -1,29 +1,22 @@
 import React, { memo, useMemo } from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withTiming,
-  withRepeat,
-  withSequence,
 } from 'react-native-reanimated';
 import LottieView from 'lottie-react-native';
 
 interface ConversationAvatarProps {
   inkBlotSvg: string | null;
-  personaName: string;
   isSpeaking: boolean;
-  isThinking: boolean;
   screenWidth: number;
 }
 
 const ConversationAvatar = memo<ConversationAvatarProps>(({
   inkBlotSvg,
-  personaName,
   isSpeaking,
-  isThinking,
   screenWidth,
 }) => {
   const avatarScale = useSharedValue(1);

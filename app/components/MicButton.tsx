@@ -3,9 +3,9 @@ import {
   View,
   Pressable,
   StyleSheet,
-  GestureResponderEvent,
-  PressableStateCallbackType,
-  ViewStyle,
+  type GestureResponderEvent,
+  type PressableStateCallbackType,
+  type ViewStyle,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
@@ -14,7 +14,6 @@ import Animated, {
   withTiming,
   withRepeat,
   withSequence,
-  interpolate,
   cancelAnimation,
 } from 'react-native-reanimated';
 import LottieView from 'lottie-react-native';

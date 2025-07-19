@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -32,7 +32,9 @@ import MicButton, { type MicButtonState } from '../components/MicButton';
 import { startRecording, stopRecording, cleanupAudio } from '../../utils/voice';
 import { getPersona, getBook, createMessage } from '../../services/chat';
 import { sttWhisper, chatLLM, ttsAudioStream } from '../../utils/api';
+import { playAudio, stopAudio, type AudioInstance } from '../../utils/audio';
 import { useChatStore } from '../../stores/chatStore';
+import { usePerformanceMonitor, PerformanceMetricsCollector, validatePerformanceTargets } from '../../utils/performance';
 
 // Types
 type RootStackParamList = {
@@ -69,7 +71,8 @@ const ConversationScreen: React.FC<ConversationScreenProps> = () => {
   // State
   const [personaName, setPersonaName] = useState<string>('');
   const [currentRecording, setCurrentRecording] = useState<Audio.Recording | null>(null);
-  const [currentSound, setCurrentSound] = useState<Audio.Sound | null>(null);
+  const [currentAudioInstance, setCurrentAudioInstance] = useState<AudioInstance | null>(null);
+  const [streamingText, setStreamingText] = useState<string>('');
 
   // Refs
   const mountedRef = useRef(true);
@@ -113,13 +116,11 @@ const ConversationScreen: React.FC<ConversationScreenProps> = () => {
         currentRecording.stopAndUnloadAsync().catch(console.error);
       }
       
-      if (currentSound) {
-        currentSound.stopAsync()
-          .then(() => currentSound.unloadAsync())
-          .catch(console.error);
+      if (currentAudioInstance) {
+        stopAudio(currentAudioInstance).catch(console.error);
       }
       
-      cleanupAudio(currentRecording || undefined, currentSound || undefined);
+      cleanupAudio(currentRecording || undefined, currentAudioInstance?.sound || undefined);
       resetConversationState();
     };
   }, [personaId, bookId]);
@@ -199,10 +200,19 @@ const ConversationScreen: React.FC<ConversationScreenProps> = () => {
     }
   }, [currentRecording, personaId, bookId]);
 
-  // Handle complete turn with streaming
+  // Performance monitoring hook
+  const { startMonitoring, getMonitor, completeMonitoring } = usePerformanceMonitor();
+
+  // Handle complete turn with streaming and performance monitoring
   const handleTurn = useCallback(async (audioUri: string) => {
+    // Start performance monitoring
+    const monitor = startMonitoring();
+    
     try {
+      // STT Phase
+      monitor.startSTT();
       const transcript = await sttWhisper(audioUri);
+      monitor.endSTT();
       
       if (!transcript || !mountedRef.current) return;
 
@@ -211,18 +221,29 @@ const ConversationScreen: React.FC<ConversationScreenProps> = () => {
       addMessage(userMessage);
 
       // Initialize streaming response
-      let streamingText = '';
+      let accumulatedText = '';
+      let firstTokenReceived = false;
+      setStreamingText('');
       
+      // Chat Phase with first token tracking
       const reply = await chatLLM(
         transcript,
         personaId,
         bookId,
-        (delta: string) => {
-          streamingText += delta;
-          // Optional: update UI with streaming text
-          console.log('Streaming chunk:', delta);
+        {
+          onChunk: (delta: string) => {
+            if (!firstTokenReceived) {
+              monitor.firstToken();
+              firstTokenReceived = true;
+            }
+            accumulatedText += delta;
+            setStreamingText(accumulatedText);
+          }
         }
       );
+      
+      // Clear streaming text when complete
+      setStreamingText('');
 
       if (!mountedRef.current) return;
 
@@ -230,40 +251,83 @@ const ConversationScreen: React.FC<ConversationScreenProps> = () => {
       const assistantMessage = createMessage('assistant', reply);
       addMessage(assistantMessage);
 
-      // Generate and play audio
+      // TTS Phase
+      monitor.startTTS();
       const audioUrl = await ttsAudioStream(reply);
-      const { sound } = await Audio.Sound.createAsync({ uri: audioUrl });
-      setCurrentSound(sound);
-      setCurrentAudio(sound);
+      monitor.endTTS();
       
-      setSpeaking(true);
-      AccessibilityInfo.announceForAccessibility('Inkling is talking');
-      
-      await sound.playAsync();
-
-      // Listen for completion
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded && status.didJustFinish) {
+      // Audio Playback Phase
+      monitor.startAudioPlayback();
+      const audioInstance = await playAudio(audioUrl, {
+        shouldPlay: true,
+        onLoadComplete: (duration) => {
+          monitor.endAudioPlayback();
+          console.log(`Audio loaded, duration: ${duration}ms`);
+        },
+        onPlaybackComplete: () => {
           setSpeaking(false);
-          sound.unloadAsync();
-          setCurrentSound(null);
+          setCurrentAudioInstance(null);
           setCurrentAudio(null);
+          
+          // Complete performance monitoring and validate targets
+          const metrics = completeMonitoring();
+          if (metrics) {
+            PerformanceMetricsCollector.add(metrics);
+            const validation = validatePerformanceTargets(metrics);
+            
+            if (!validation.passed) {
+              console.warn('Performance targets not met:', validation.failures);
+            }
+            
+            if (validation.warnings.length > 0) {
+              console.warn('Performance warnings:', validation.warnings);
+            }
+          }
+        },
+        onError: (error) => {
+          console.error('Audio playback error:', error);
+          setSpeaking(false);
+          setCurrentAudioInstance(null);
+          setCurrentAudio(null);
+          
+          // Complete monitoring even on error
+          completeMonitoring();
         }
       });
+      
+      setCurrentAudioInstance(audioInstance);
+      setCurrentAudio(audioInstance.sound);
+      setSpeaking(true);
+      AccessibilityInfo.announceForAccessibility('Inkling is talking');
     } catch (error) {
       console.error('Failed to process turn:', error);
       setSpeaking(false);
-      setCurrentSound(null);
+      setCurrentAudioInstance(null);
       setCurrentAudio(null);
+      
+      // Complete monitoring on error
+      completeMonitoring();
+      
+      // Provide more specific error messages
+      let errorMessage = 'Failed to process conversation turn. Please try again.';
+      if (error instanceof Error) {
+        if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = 'Network error. Please check your connection and try again.';
+        } else if (error.message.includes('rate limit')) {
+          errorMessage = 'Too many requests. Please wait a moment and try again.';
+        } else if (error.message.includes('audio')) {
+          errorMessage = 'Audio processing failed. Please try again.';
+        }
+      }
       
       Toast.show({
         type: 'error',
         text1: 'Processing Error',
-        text2: 'Failed to process conversation turn. Please try again.',
+        text2: errorMessage,
         visibilityTime: 4000,
       });
     }
-  }, [personaId, bookId]);
+  }, [personaId, bookId, startMonitoring, getMonitor, completeMonitoring]);
 
 
 
@@ -324,14 +388,14 @@ const ConversationScreen: React.FC<ConversationScreenProps> = () => {
           text: 'End Chat',
           style: 'destructive',
           onPress: () => {
-            cleanupAudio(currentRecording || undefined, currentSound || undefined);
+            cleanupAudio(currentRecording || undefined, currentAudioInstance?.sound || undefined);
             resetConversationState();
             navigation.goBack();
           },
         },
       ]
     );
-  }, [currentRecording, currentSound, navigation]);
+  }, [currentRecording, currentAudioInstance, navigation]);
 
   // Handle exit button
   const handleExitButton = useCallback(() => {
@@ -339,13 +403,13 @@ const ConversationScreen: React.FC<ConversationScreenProps> = () => {
     navigation.goBack();
   }, [navigation]);
 
-  // Get mic button state
-  const getMicButtonState = (): MicButtonState => {
+  // Get mic button state (memoized for performance)
+  const micButtonState = useMemo((): MicButtonState => {
     if (isRecording) return 'listening';
     if (isThinking) return 'thinking';
     if (isSpeaking) return 'speaking';
     return 'idle';
-  };
+  }, [isRecording, isThinking, isSpeaking]);
 
   // Animated styles
   const avatarAnimatedStyle = useAnimatedStyle(() => {
@@ -391,6 +455,13 @@ const ConversationScreen: React.FC<ConversationScreenProps> = () => {
           </View>
         </Animated.View>
 
+        {/* Streaming text display */}
+        {isThinking && streamingText && (
+          <View style={styles.streamingTextContainer}>
+            <Text style={styles.streamingText}>{streamingText}</Text>
+          </View>
+        )}
+
         {/* Speaking waveform overlay */}
         {isSpeaking && (
           <View style={styles.waveformOverlay}>
@@ -409,7 +480,7 @@ const ConversationScreen: React.FC<ConversationScreenProps> = () => {
         <View style={styles.footerContent}>
           {/* Mic Button */}
           <MicButton
-            state={getMicButtonState()}
+            state={micButtonState}
             onPressIn={handleStartRecording}
             onPressOut={handleStopRecording}
             disabled={isThinking || isSpeaking}
@@ -499,6 +570,30 @@ const styles = StyleSheet.create({
     width: 100,
     height: 30,
     opacity: 0.7,
+  },
+  streamingTextContainer: {
+    position: 'absolute',
+    bottom: 50,
+    left: 20,
+    right: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 20,
+  },
+  streamingText: {
+    fontSize: 16,
+    color: '#374151',
+    lineHeight: 24,
+    textAlign: 'center',
   },
   footer: {
     height: 96, // 24 * 4 (h-24 in Tailwind)
