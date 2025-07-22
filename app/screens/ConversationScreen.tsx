@@ -23,7 +23,7 @@ import Animated, {
   withRepeat,
   withSequence,
 } from 'react-native-reanimated';
-import LottieView from 'lottie-react-native';
+// LottieView removed to focus on functionality
 
 // Components
 import MicButton, { type MicButtonState } from '../components/MicButton';
@@ -462,15 +462,12 @@ const ConversationScreen: React.FC<ConversationScreenProps> = () => {
           </View>
         )}
 
-        {/* Speaking waveform overlay */}
+        {/* Speaking indicator overlay */}
         {isSpeaking && (
           <View style={styles.waveformOverlay}>
-            <LottieView
-              source={require('../../assets/waveform.json')}
-              autoPlay={true}
-              loop={true}
-              style={styles.waveform}
-            />
+            <Animated.View style={[styles.speakingIndicator, avatarAnimatedStyle]}>
+              <Text style={styles.speakingText}>🎵 Speaking...</Text>
+            </Animated.View>
           </View>
         )}
       </View>
@@ -566,10 +563,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 15,
   },
-  waveform: {
-    width: 100,
-    height: 30,
-    opacity: 0.7,
+  speakingIndicator: {
+    backgroundColor: 'rgba(14, 165, 233, 0.1)',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(14, 165, 233, 0.3)',
+  },
+  speakingText: {
+    color: '#0ea5e9',
+    fontSize: 14,
+    fontWeight: '500',
   },
   streamingTextContainer: {
     position: 'absolute',

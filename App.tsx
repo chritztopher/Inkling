@@ -13,15 +13,9 @@ import './global.css';
 // Prevent the splash screen from auto-hiding before asset loading is complete
 SplashScreen.preventAutoHideAsync();
 
-// Pre-cache critical assets
-const criticalAssets = [
-  require('./assets/inkblot.svg'),
-];
-
-// Lazy load non-critical assets
-const nonCriticalAssets = [
-  require('./assets/waveform.json'),
-];
+// Assets removed to focus on functionality
+const criticalAssets: any[] = [];
+const nonCriticalAssets: any[] = [];
 
 export default function App() {
   const statusBarStyle = useMemo(() => 
