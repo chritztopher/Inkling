@@ -26,9 +26,15 @@ let cachedExtras: Record<string, string> | null = null;
 
 function getExtras(): Record<string, string> {
   if (!cachedExtras) {
-    cachedExtras = (Constants.expoConfig?.extra ??
-      /* @ts-ignore -- fallback for web manifest2 */ Constants.manifest2?.extra ??
-      {}) as Record<string, string>;
+    try {
+      cachedExtras = (Constants.expoConfig?.extra ??
+        /* @ts-ignore -- fallback for web manifest2 */ Constants.manifest2?.extra ??
+        Constants.manifest?.extra ??
+        {}) as Record<string, string>;
+    } catch (error) {
+      console.warn('Failed to load environment extras, using empty object:', error);
+      cachedExtras = {};
+    }
   }
   return cachedExtras;
 }

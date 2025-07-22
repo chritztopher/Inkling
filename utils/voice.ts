@@ -75,7 +75,9 @@ export const initializeAudio = async (): Promise<boolean> => {
       playsInSilentModeIOS: true,
       playThroughEarpieceAndroid: false,
       shouldDuckAndroid: true,
-      staysActiveInBackground: false, // Changed to false to prevent background issues
+      staysActiveInBackground: false,
+      interruptionModeIOS: Audio.InterruptionModeIOS.DoNotMix,
+      interruptionModeAndroid: Audio.InterruptionModeAndroid.DoNotMix,
     });
 
     return true;

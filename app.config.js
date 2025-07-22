@@ -15,16 +15,16 @@ module.exports = ({ config }) => ({
       backgroundColor: "#ffffff"
     },
     assetBundlePatterns: [
-      "assets/icon.png",
-      "assets/splash.png",
-      "assets/adaptive-icon.png",
-      "assets/favicon.png",
-      "assets/inkblot.svg",
-      "assets/waveform.json"
+      // Assets removed to focus on functionality
     ],
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.inkling.conversation"
+      bundleIdentifier: "com.inkling.conversation",
+      infoPlist: {
+        NSMicrophoneUsageDescription: "This app needs access to the microphone to record voice messages for conversation with AI personas.",
+        NSCameraUsageDescription: "This app does not use the camera.",
+        UIBackgroundModes: ["audio"]
+      }
     },
     android: {
       adaptiveIcon: {
